@@ -1,0 +1,28 @@
+﻿# Unreal Engine generated files
+Binaries/
+DerivedDataCache/
+Intermediate/
+Saved/
+
+# IDE
+.vs/
+.idea/
+.vscode/
+
+# Build outputs
+Build/
+
+# Visual Studio generated solutions
+*.sln
+*.slnx
+
+# Local MCP configuration
+.mcp.json
+
+# Operating system
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Local Claude Code settings
+.claude/settings.local.json
