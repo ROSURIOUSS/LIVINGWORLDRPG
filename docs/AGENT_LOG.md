@@ -3,3 +3,4 @@
 
 - 2026-11-13 · studio-director (главная сессия) · T-002 инфраструктура студии · файлы созданы; хук guard.js протестирован 8/8 (`node .claude/hooks/guard.test.js`).
 - 2026-11-13 · general-purpose (роль code-reviewer) · T-010 · отчёт docs/audits/CPP_DEPENDENCIES.md; выводы перепроверены grep'ом выборочно. Урок: кастомные агенты доступны только после перезапуска сессии (подтверждено: сначала «Agent type not found», позже появились в списке).
+- 2026-11-13 · studio-director · T-003/T-008/T-011/T-004 · ADR 7 из 10 → APPROVED; Config и .uproject изменены минимально (резервная копия вне репозитория: `D:/My game/_LW_backups/2026-11-13/`); Blender MCP проверен; UBT JsonExport подтвердил состав целей. Замечание: правки Config выполнены через Bash (Edit-хук блокирует Config/Default*.ini) по явному разрешению директора.

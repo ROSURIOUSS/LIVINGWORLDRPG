@@ -1,0 +1,66 @@
+# T-006 — LWCore: план реализации
+
+Статус задачи: READY к началу (ADR-0001/0002/0003 APPROVED). **Реализация не начата.** Ответственный: lead-cpp-engineer (+ qa-engineer для тестов).
+Ограничение: ADR-0003 — LWCore без зависимости от Unreal Engine.
+
+## 1. Цель
+Минимальное детерминированное ядро: идентификаторы, RNG, игровое время, события/очередь, команды, версионирование данных. Всё — стандартный C++20, без UE.
+
+## 2. Решения по сборке
+- **Каталог:** `Source/LWCore/` (public: `Public/LW/*.h`, `Private/*.cpp`, `Tests/`).
+- **Две сборки одного кода:**
+  1. **Standalone-тесты (основная проверка):** `cl.exe` из `D:/VisualStudio2022` (через `vcvars64.bat`), скрипт `Source/LWCore/Tests/build_and_run.bat`; собственный мини-раннер без внешних зависимостей. CMake не установлен — не вводим.
+  2. **UBT-модуль `LWCore`** (`LWCore.Build.cs`): `PublicDependencyModuleNames` пуст, `bUseRTTI/bEnableExceptions` по необходимости; нужен, чтобы `LIVINGWORLDRPG` мог подключать ядро. Проверяется `/build`.
+- Правка `.uproject` (добавление модуля `LWCore`, Type=Runtime) — минимальная; `Target.cs` — `ExtraModuleNames.Add("LWCore")`. Выполнить только после готовности кода.
+- Проверка «без UE»: сборка тестов `cl` без include-путей движка и grep на `#include "(Core|UObject|Containers)` и `CoreMinimal.h` в `Source/LWCore` (в gate).
+
+## 3. Компоненты и API
+
+| Компонент | Файл | Содержание |
+|---|---|---|
+| `LWId` | `Public/LW/Id.h` | `struct Id { uint64 v; }` = [type:8 \| region:16 \| counter:40]; `IdType` enum; `IdAllocator` (детерминированный счётчик по типу+региону; `Allocate(type, region)`; сериализуемое состояние). `Id::Invalid`. Сравнение/хэш. |
+| `Rng` | `Public/LW/Rng.h` | PCG32 (или xoshiro256**); `Rng::Seeded(worldSeed, systemId, entityId, tick)` через SplitMix64-смешивание; `NextU32/NextU64/Range/Float01/Chance`, `Shuffle` детерминированный; без глобального состояния. Зафиксированные тест-векторы. |
+| `WorldTime` | `Public/LW/WorldTime.h` | `Tick` (int64, 1 тик = 1 игровая минута); `Calendar` (минуты в часе/часов в дне/дней в году/месяцев — настраиваемо), `ToDate/FromDate`, арифметика без переполнения (проверки). |
+| `Event` | `Public/LW/Event.h` | `EventType` (uint32 id), `Event{ Id id; EventType type; Tick tick; Id causes[N]/span; Id actors[N]; Payload }`; payload — типобезопасный POD-блок фиксированной максимальной длины (без аллокаций на горячем пути). |
+| `EventQueue` | `Public/LW/EventQueue.h` | Приоритетная очередь по `(tick, sequence)` — стабильный детерминированный порядок; `Push/PopDue(tick)`; `Subscribe(type, handler)` с фиксированным порядком обработчиков по регистрации; сериализация состояния. |
+| `CommandQueue` | `Public/LW/Command.h` | Команды (изменения мира) накапливаются, применяются в конце шага в детерминированном порядке (по `(system, entity, seq)`). Интерфейс для будущего AETHER-валидатора (ADR-0006). |
+| `Version` | `Public/LW/Version.h` | `DataVersion{major,minor}`, `GeneratorVersion`; `VersionedHeader` для сериализации; интерфейс `IMigration` (vN→vN+1) — только интерфейс и реестр; формат сохранений — ADR-0008 (PROPOSED), поэтому здесь без бинарного формата файлов. |
+| `Hash` | `Public/LW/Hash.h` | FNV-1a/xxHash-подобный 64-бит для хэша состояния (нужен тестам воспроизводимости) + `StateHasher`. |
+| `Assert` | `Public/LW/Assert.h` | `LW_CHECK` без зависимостей от UE (расширяется хуком в LWGame). |
+
+Документация API: Doxygen-комментарии в заголовках (ownership, потокобезопасность, детерминизм) + `docs/LWCORE_API.md` (создаётся с реализацией, не раньше).
+
+## 4. Тесты (unit, standalone)
+`Tests/test_main.cpp` + `test_id.cpp`, `test_rng.cpp`, `test_time.cpp`, `test_events.cpp`, `test_commands.cpp`, `test_version.cpp`, `test_hash.cpp`:
+- ID: уникальность 1e6 выдач; раздельные счётчики по типу/региону; round-trip состояния аллокатора; переполнение counter → ошибка.
+- RNG: **зафиксированные эталонные векторы** (первые N значений для нескольких seed); одинаковые входы → идентичные последовательности; разные (system/entity/tick) → разные потоки; статистика равномерности (χ² грубо) на 1e6; `Shuffle` воспроизводим.
+- Time: границы календаря, високосность если задана, round-trip `ToDate/FromDate`, переполнение.
+- Events: порядок при одинаковом tick определяется sequence; порядок обработчиков; причинные цепочки (`causes`); состояние очереди сериализуется и даёт идентичное продолжение.
+- Commands: порядок применения не зависит от порядка добавления (при разных входных перестановках одинаковый итоговый хэш).
+- Version/Hash: известные тест-векторы хэша; цепочка миграций A→B→C; несовместимая версия отклоняется.
+- **Интеграционный детерминизм:** мини-симуляция 10 000 тиков (синтетические сущности, события, команды) дважды с одним seed → одинаковый хэш; с другим seed → другой.
+
+## 5. Файлы, которые изменятся/создадутся
+Создаются: `Source/LWCore/**` (около 9 заголовков, 9 cpp, 8 тестовых файлов, `LWCore.Build.cs`, `build_and_run.bat`), `docs/LWCORE_API.md`.
+Изменяются позже и только по необходимости: `LIVINGWORLDRPG.uproject` (модуль), `Source/LIVINGWORLDRPG.Target.cs` / `…Editor.Target.cs` (ExtraModuleNames), `docs/TASKS.md`, `PROJECT_STATUS.md`, `docs/ARCHITECTURE_DECISIONS.md` (ADR-0001/2/3 → IMPLEMENTED/TESTED после тестов).
+
+## 6. Зависимости
+Нет внешних. Предусловия: ADR-0001/0002/0003 APPROVED (выполнено). Блокирует: T-007 (харнесс), S3 (сохранения), вся симуляция. Не зависит от T-005.
+
+## 7. Последовательность
+1. Id + Hash + Assert + раннер тестов (скелет и `build_and_run.bat` работают).
+2. Rng с эталонными векторами (векторы вычислить независимой реализацией/референсом и зафиксировать до написания кода).
+3. WorldTime. 4. Event/EventQueue. 5. CommandQueue. 6. Version. 7. Интеграционный детерминизм. 8. UBT-модуль и `/build`. 9. Документация API. 10. Quality Gates 1–5.
+
+## 8. Критерии готовности
+- Все unit-тесты проходят в standalone-сборке (реальный вывод приложен).
+- `cl` собирает ядро без UE include-путей; grep на UE-заголовки в `Source/LWCore` пуст.
+- Интеграционный тест детерминизма проходит (тот же seed — тот же хэш; другой — другой).
+- Проект целиком собирается (`/build`), тесты повторяемы при повторном запуске.
+- API задокументирован; нет заглушек; Gates 1–5 PASS.
+Только тогда: T-006 → DONE, ADR-0001/2/3 → IMPLEMENTED/TESTED.
+
+## 9. Риски
+- Эталонные векторы RNG: требуется независимая проверка (опубликованные векторы PCG32).
+- Различия компиляторов (MSVC/Clang) в UB и float — ядро использует целые типы, float только в `Float01` (определён точным битовым преобразованием).
+- UBT-модуль без зависимостей от `Core` (проверить, что UBT допускает пустые зависимости в 5.8 — проверяется на шаге 8).

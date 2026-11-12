@@ -3,7 +3,7 @@
 | MCP | Статус | Доказательство | Кто пользуется |
 |---|---|---|---|
 | unreal-mcp (`.mcp.json`, http://127.0.0.1:8000/mcp) | **РАБОТАЕТ** при запущенном редакторе | `PluginToolset.ListEnabledPlugins`, `AssetTools.find_assets` вернули данные | unreal-engine-engineer, qa-engineer, performance-engineer, technical-artist, главная сессия |
-| blender | **НЕ ПОДКЛЮЧЁН** | `Could not connect to Blender. Make sure the Blender addon is running.`; blender.exe в стандартных путях не найден | technical-artist (после подключения) |
+| blender | **РАБОТАЕТ** (2026-11-13: Blender 5.3.0, аддон 2.0, протокол 16; `get_scene_info` → дефолтная сцена) | `get_addon_status`, `get_scene_info` | technical-artist |
 | context7 (плагин) | загружен, **функционально не проверялся** | инструменты `resolve-library-id`, `query-docs` в списке | все инженеры для сторонних библиотек (не для API UE) |
 
 ## Вызов Unreal MCP

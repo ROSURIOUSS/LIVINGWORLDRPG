@@ -1,16 +1,16 @@
 # TASKS
 Приоритеты: CRITICAL/HIGH/MEDIUM/LOW. Статусы: BACKLOG · READY · IN_PROGRESS · REVIEW · BLOCKED · DONE. Задача не назначается, пока зависимости не DONE.
 
-| ID | Задача | Приор. | Статус | Агент | Зависит | Файлы | Приёмка / тест |
+| ID | Задача | Приор. | Статус | Агент | Зависит | Файлы | Приёмка / проверка |
 |---|---|---|---|---|---|---|---|
 | T-001 | Аудит проекта и окружения | HIGH | DONE | studio-director | — | docs/KNOWN_ISSUES.md | отчёт 2026-11-12 |
-| T-002 | Инфраструктура студии | HIGH | REVIEW | studio-director | T-001 | CLAUDE.md, .claude/**, docs/** | хук 8/8; T-010 пройден; кастомные агенты видны после перезапуска, но ни один не запущен в деле |
-| T-010 | Тестовый workflow: аудит зависимостей C++ модуля | MEDIUM | DONE | general-purpose (роль code-reviewer) | T-002 | docs/audits/CPP_DEPENDENCIES.md | отчёт с file:line, выборочно перепроверен |
-| T-003 | Утвердить ADR-0001…0010 | CRITICAL | BLOCKED (решение пользователя) | пользователь | T-002 | docs/ARCHITECTURE_DECISIONS.md | статусы APPROVED |
-| T-004 | Подключить Blender MCP | MEDIUM | BLOCKED (пользователь) | пользователь | — | — | `get_addon_status` OK |
-| T-005 | Исследование Mass Entity в UE 5.8 (10k сущностей) | HIGH | BACKLOG | unreal-engine-engineer | T-003 | docs/research/MASS.md | замеры |
-| T-006 | S1 LWCore (ID/RNG/Time/Events/Commands) | CRITICAL | BACKLOG | lead-cpp-engineer | T-003 | Source/LWCore/** | автотесты RNG/ID/порядка |
+| T-002 | Инфраструктура студии (AI Studio) | HIGH | **REVIEW** | studio-director | T-001 | CLAUDE.md, .claude/**, docs/** | хук 8/8, frontmatter 36/36, T-010 пройден общим агентом; ни один кастомный агент ещё не выполнил реальную задачу — **не DONE** |
+| T-003 | Утвердить ADR | CRITICAL | DONE | технический директор | T-002 | docs/ARCHITECTURE_DECISIONS.md | APPROVED: 0001, 0002, 0003, 0005, 0006, 0009, 0010; PROPOSED: 0004, 0007, 0008 |
+| T-004 | Подключить Blender MCP | MEDIUM | DONE | пользователь | — | — | `get_addon_status`: Blender 5.3.0, аддон 2.0; `get_scene_info`: дефолтная сцена, ничего не менялось |
+| T-005 | Исследование Mass Entity в UE 5.8 (10k сущностей) | HIGH | BACKLOG | unreal-engine-engineer | ADR-0004 | docs/research/MASS.md | замеры |
+| T-006 | S1 LWCore (ID/RNG/WorldTime/Events/Commands/Version), чистый C++ без UE | CRITICAL | **READY** | lead-cpp-engineer | T-003 | Source/LWCore/** | план `docs/plans/T-006_LWCore.md`; реализация не начата |
 | T-007 | S2 тестовый харнесс | HIGH | BACKLOG | qa-engineer | T-006 | Source/LWTests/** | хэш состояния воспроизводим |
-| T-008 | Чистка конфигов (ProjectName, token, GameFeatureData, gitattributes) | LOW | BLOCKED (санкция на Config) | unreal-engine-engineer | T-003 | Config/*.ini, .gitattributes | `/build`, запуск редактора |
-| T-009 | Вертикальный срез S3…S10 | HIGH | BACKLOG | см. VERTICAL_SLICE | T-006,T-007 | — | docs/VERTICAL_SLICE.md |
-| T-011 | Ограничить MCP-плагины Editor-only и добавить EnhancedInput в .uproject | LOW | BLOCKED (санкция на правку .uproject) | unreal-engine-engineer | T-003 | LIVINGWORLDRPG.uproject | редактор открывается, `/build` OK |
+| T-008 | Правка конфигов (ProjectName, SecurityToken, GameFeatureData, .gitattributes) | LOW | **REVIEW** | studio-director | T-003 | Config/DefaultEngine.ini, Config/DefaultGame.ini, .gitattributes | diff показан; ключи не удалялись; перезагрузка в редакторе не проверена |
+| T-009 | Вертикальный срез S3…S10 | HIGH | BACKLOG | см. VERTICAL_SLICE | T-006, T-007 | — | docs/VERTICAL_SLICE.md |
+| T-010 | Тестовый workflow: аудит зависимостей C++ | MEDIUM | DONE | general-purpose (роль code-reviewer) | T-002 | docs/audits/CPP_DEPENDENCIES.md | выборочно перепроверен |
+| T-011 | MCP-плагины только Editor, явный EnhancedInput в .uproject | LOW | **REVIEW** | studio-director | T-003 | LIVINGWORLDRPG.uproject | UBT JsonExport: Game-цель без модулей ModelContextProtocol, Editor-цель с ними; сборка и запуск редактора не выполнялись |
