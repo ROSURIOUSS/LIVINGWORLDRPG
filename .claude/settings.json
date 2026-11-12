@@ -1,0 +1,45 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git status:*)",
+      "Bash(git diff:*)",
+      "Bash(git log:*)",
+      "Bash(git branch:*)",
+      "Bash(git lfs:*)",
+      "Bash(git worktree list:*)",
+      "mcp__unreal-mcp__list_toolsets",
+      "mcp__unreal-mcp__describe_toolset"
+    ],
+    "deny": [
+      "Bash(git push --force:*)",
+      "Bash(git push -f:*)",
+      "Bash(git reset --hard:*)",
+      "Bash(git clean -fd:*)",
+      "Read(./.env)",
+      "Read(./**/*.pem)"
+    ]
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash|Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node .claude/hooks/guard.js"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node .claude/hooks/session-end.js"
+          }
+        ]
+      }
+    ]
+  }
+}
